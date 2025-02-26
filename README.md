@@ -16,7 +16,7 @@ The project follows the Clean Architecture with the following layers:
 
 ## Structure directory
 ```
-backend-agregador-noticias/
+backend-agregador-news/
 ├── src/
 │   ├── domain/                     # Domain Layer
 │   │   ├── entities/               # Business entities

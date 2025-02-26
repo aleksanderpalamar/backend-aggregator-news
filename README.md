@@ -143,7 +143,7 @@ The project implements several security measures:
 - Input Validation: Strict validation of user input
 - Data Sanitization: Prevention against code injection
 
-## Feaatures to be implemented
+## Features to be implemented
 
 - Test coverage: Increase test coverage to ensure code quality
 - Test integration: Implement integration tests to ensure the correct functioning of the system.

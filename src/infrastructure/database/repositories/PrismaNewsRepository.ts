@@ -5,12 +5,15 @@ import { NewsRepository } from "../../../domain/entities/repositories/NewsReposi
 import { FiltredNews } from "../../../applications/dtos/NewsDTO";
 import prisma from "../prisma/prismaClient";
 import { CacheService } from "../../cache/CacheService";
+import { NewsApiAdapter } from "../../external/newsapi/NewsApiAdapter";
 
 export class PrismaNewsRepository implements NewsRepository {
   private cacheService: CacheService;
+  private newsApiAdapter: NewsApiAdapter;
   
-  constructor(cacheService: CacheService) {
+  constructor(cacheService: CacheService, newsApiAdapter: NewsApiAdapter) {
     this.cacheService = cacheService;
+    this.newsApiAdapter = newsApiAdapter;
   }
 
   async getAll(filter: FiltredNews): Promise<News[]> {
@@ -89,32 +92,94 @@ export class PrismaNewsRepository implements NewsRepository {
   }
 
   async save(news: News): Promise<void> {
-    // Check if news already exists
-    const exists = await prisma.news.findFirst({
-      where: {
-        urlOriginal: news.urlOriginal
-      }
-    });
-
-    if (!exists) {
-      // Create new news item
-      await prisma.news.create({
-        data: {
-          title: news.title,
-          content: news.content,
-          resume: news.resume,
-          datePublished: news.datePublished,
-          source: news.source,
-          author: news.author,
-          categories: news.categories,
-          urlImages: news.urlImages,
-          urlOriginal: news.urlOriginal
-        }
-      });
+    try {
+      await this.saveMultipleNews([news]);
+    } catch (error) {
+      console.error(`Erro ao salvar notícia "${news.title}":`, error);
+      throw error;
     }
   }
 
   async updatedCache(): Promise<void> {
+    try {
+      // Verificar se a API KEY está configurada
+      if (!process.env.NEWS_API_KEY) {
+        console.warn("NEWS_API_KEY não está configurada. Não será possível buscar notícias da API externa.");
+        await this.updateCacheFromDatabase();
+        return;
+      }
+      
+      console.log("Buscando notícias da API externa...");
+      // Fetch news from the external API using the adapter
+      const externalNews = await this.newsApiAdapter.getNews();
+      
+      if (externalNews.length === 0) {
+        console.warn("Nenhuma notícia recebida da API externa. Usando apenas notícias do banco de dados.");
+        await this.updateCacheFromDatabase();
+        return;
+      }
+      
+      console.log(`Recebido ${externalNews.length} notícias da API externa. Salvando no banco de dados...`);
+      
+      // Save each news item to the database
+      const savedCount = await this.saveMultipleNews(externalNews);
+      
+      // Atualizar o cache com todas as notícias (incluindo as novas)
+      await this.updateCacheFromDatabase();
+      
+      console.log(`Salvas ${savedCount} novas notícias da API externa no banco de dados.`);
+    } catch (error) {
+      console.error("Erro ao atualizar o cache de notícias:", error);
+      // Em caso de erro, tente pelo menos atualizar o cache com os dados do banco
+      try {
+        await this.updateCacheFromDatabase();
+      } catch (dbError) {
+        console.error("Erro ao atualizar o cache a partir do banco de dados:", dbError);
+      }
+    }
+  }
+  
+  // Método auxiliar para salvar múltiplas notícias e contar apenas as novas
+  private async saveMultipleNews(newsList: News[]): Promise<number> {
+    let savedCount = 0;
+    
+    for (const news of newsList) {
+      try {
+        // Verificar se a notícia já existe
+        const exists = await prisma.news.findFirst({
+          where: {
+            urlOriginal: news.urlOriginal
+          }
+        });
+        
+        if (!exists) {
+          // Criar nova notícia
+          await prisma.news.create({
+            data: {
+              title: news.title,
+              content: news.content,
+              resume: news.resume,
+              datePublished: news.datePublished,
+              source: news.source,
+              author: news.author,
+              categories: news.categories,
+              urlImages: news.urlImages,
+              urlOriginal: news.urlOriginal
+            }
+          });
+          savedCount++;
+        }
+      } catch (error) {
+        console.error(`Erro ao salvar notícia "${news.title}":`, error);
+        // Continuar tentando salvar as outras notícias
+      }
+    }
+    
+    return savedCount;
+  }
+  
+  // Método auxiliar para atualizar o cache com dados do banco
+  private async updateCacheFromDatabase(): Promise<void> {
     // Get all news from database
     const allNews = await prisma.news.findMany({
       orderBy: { datePublished: 'desc' }
@@ -136,6 +201,7 @@ export class PrismaNewsRepository implements NewsRepository {
     
     // Store in cache
     this.cacheService.set("allNews", news);
+    console.log(`Cache atualizado com ${news.length} notícias do banco de dados.`);
   }
 
   private applyFilters(news: News[], filter: FiltredNews): News[] {

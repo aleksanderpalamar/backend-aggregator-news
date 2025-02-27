@@ -14,18 +14,23 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(helmet());
 app.use(compression());
 app.use(express.json());
 
+// Verificar se a chave da API está configurada
+if (!process.env.NEWS_API_KEY) {
+  console.warn("ATENÇÃO: NEWS_API_KEY não está configurada no arquivo .env. A aplicação não conseguirá buscar notícias externas.");
+}
+
 const newsApiAdapter = new NewsApiAdapter(
-  process.env.NEWS_API_KEY as string
+  process.env.NEWS_API_KEY || ""
 );
 const cacheService = new CacheService();
-const newsRepository = new PrismaNewsRepository(cacheService);
+const newsRepository = new PrismaNewsRepository(cacheService, newsApiAdapter);
 const newsService = new NewsServiceImpl(newsRepository);
 const updatedNews = new UpdatedNews(newsService, cacheService);
 

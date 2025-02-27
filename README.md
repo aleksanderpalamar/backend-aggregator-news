@@ -107,32 +107,39 @@ backend-agregador-news/
 1. Clone the repository: `git clone https://github.com/aleksanderpalamar/backend-aggregator-news.git`
 2. Install dependencies: `npm install`
 3. Create a `.env` file based on `.env.example`
-4. Run the application:
-```bash
-# Development
-npm run dev
+4. Configure your NewsAPI key in the `.env` file (get one at https://newsapi.org/)
+5. Setup the database with Prisma:
+   ```bash
+   npx prisma generate
+   npx prisma migrate dev
+   ```
+6. Run the application:
+   ```bash
+   # Development
+   npm run dev
 
-# Production
-npm run build
-npm start
-```
+   # Production
+   npm run build
+   npm start
+   ```
 
 ## Environment Variables
 ```bash
 # Server
 PORT=3000
-NODE_ENV=development
 
-# MongoDB
-MONGODB_URI=mongodb://localhost:27017/noticias
+# NewsAPI (REQUIRED)
+# Register at https://newsapi.org/ to get your API key
+NEWS_API_KEY=your_api_key_here
 
-# NewsAPI
-NEWS_API_KEY=sua_chave_api
+# The database configuration is managed by Prisma
+# See prisma/schema.prisma for more details
+```
 
-# Cache
-CACHE_TTL=600  # Time to live for cache in seconds
-UPDATE_INTERVAL=10  # Interval for periodic update in minutes
-```	
+## Important Notes
+
+- **NewsAPI Key**: The application requires a valid NewsAPI key to fetch news from external sources. Without this key, the system will still work but will only serve news already stored in the database.
+- **Database**: This project uses Prisma with PostgreSQL by default. You can modify the database provider in the prisma/schema.prisma file if needed.
 
 ## Security
 

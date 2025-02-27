@@ -47,16 +47,21 @@ export class NewsApiAdapter {
     await this.throttleRequest();
     
     const endpoint = '/top-headlines';
-    const params = {
+    
+    // Definir o tipo para o objeto params
+    const params: {
+      apiKey: string;
+      language: string;
+      country: string;
+      pageSize: number;
+      page: number;
+      category?: string;
+      q?: string;
+    } = {
       apiKey: this.apiKey,
       language: "pt",
+      country: "br", // Adicionando país para garantir resultados
       pageSize: filtred?.quantity || 20,
-      ...filtred?.categories && {
-        category: filtred.categories
-      },
-      ...filtred?.term && {
-        q: filtred.term
-      },
       page: filtred?.page || 1,
     };
 
@@ -69,12 +74,29 @@ export class NewsApiAdapter {
     }
 
     try {
+      console.log(`Requesting news from ${this.baseUrl}${endpoint} with params:`, { ...params, apiKey: "***" });
       const response = await axios.get(`${this.baseUrl}${endpoint}`, { params });
-
+      
+      if (!response.data || !response.data.articles) {
+        console.error("Invalid API response:", response.data);
+        return [];
+      }
+      
+      console.log(`Received ${response.data.articles.length} articles from NewsAPI`);
       return this.mapingForNews(response.data.articles);
     } catch (error) {
-      console.error("Error fetching news:", error);
-      throw new Error("Error fetching news");      
+      if (axios.isAxiosError(error)) {
+        console.error("Error fetching news:", {
+          status: error.response?.status,
+          message: error.response?.data?.message || error.message,
+          url: error.config?.url
+        });
+      } else {
+        console.error("Error fetching news:", error);
+      }
+      
+      // Retornar array vazio em vez de lançar erro para evitar falha completa
+      return [];
     }
   }
 }

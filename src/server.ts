@@ -1,12 +1,11 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import { createNewsRoutes } from './interface/routes/newsRoutes';
 import { errorHandler } from './interface/middlewares/errorHandler';
 import { NewsServiceImpl } from './applications/services/NewsService';
-import { NewsRepositoryImpl } from './infrastructure/database/repositories/NewsRepositoryImpl';
+import { PrismaNewsRepository } from './infrastructure/database/repositories/PrismaNewsRepository';
 import { NewsApiAdapter } from './infrastructure/external/newsapi/NewsApiAdapter';
 import { CacheService } from './infrastructure/cache/CacheService';
 import { UpdatedNews } from './config/scheduler';
@@ -22,20 +21,11 @@ app.use(helmet());
 app.use(compression());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI as string)
-  .then(() => {
-    console.log('Connected to MongoDB');
-  })
-  .catch((error) => {
-    console.error('Error connecting to MongoDB:', error);
-    process.exit(1);
-  });
-
 const newsApiAdapter = new NewsApiAdapter(
   process.env.NEWS_API_KEY as string
 );
-const newsRepository = new NewsRepositoryImpl(newsApiAdapter);
 const cacheService = new CacheService();
+const newsRepository = new PrismaNewsRepository(cacheService);
 const newsService = new NewsServiceImpl(newsRepository);
 const updatedNews = new UpdatedNews(newsService, cacheService);
 

@@ -9,7 +9,7 @@ export class NewsApiAdapter {
   private baseUrl: string;
   private limitRequests: number = 0;
   private lastRequestTime: number = 0;
-  private requestInterval: number = 30 * 60 * 1000; // 30 minutos
+  private requestInterval: number = 1000; // 1 segundo
 
   private async throttleRequest() {
     const now = Date.now();

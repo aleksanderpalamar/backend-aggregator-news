@@ -87,6 +87,19 @@ backend-agregador-news/
 
 - Response: Full details of the news.
 
+## To test the routes using Postman or similar tools, follow these steps:
+
+1. Start the server by running `npm run dev` in the terminal.
+2. Open Postman and create new requests for the following routes:
+
+- List all news:
+  - Method: GET
+    - URL: http://localhost:3000/api/news
+- Search for news by ID:
+  - Method: GET
+    - URL: http://localhost:3000/api/news/[id]
+    - Replace [id] with the actual news ID
+
 ## Technologies Used
 
 - Node.js: Runtime environment

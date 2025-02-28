@@ -145,15 +145,16 @@ export class PrismaNewsRepository implements NewsRepository {
     
     for (const news of newsList) {
       try {
-        // Verificar se a notícia já existe
-        const exists = await prisma.news.findFirst({
+        // First check if the news already exists
+        const exists = await prisma.news.findUnique({
           where: {
             urlOriginal: news.urlOriginal
-          }
+          },
+          select: { id: true }
         });
         
+        // If it doesn't exist, create it
         if (!exists) {
-          // Criar nova notícia
           await prisma.news.create({
             data: {
               title: news.title,

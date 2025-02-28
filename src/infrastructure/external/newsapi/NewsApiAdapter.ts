@@ -32,7 +32,7 @@ export class NewsApiAdapter {
       datePublished: new Date(article.publishedAt),
       source: article.source.name,
       author: article.author || "Unknown",
-      categories: article.category ? [article.category] : [],
+      categories: article.category ? [article.category] : ["general"], // Default to "general" if no category
       urlImages: article.urlToImage || "",
       urlOriginal: article.url,
     }))
@@ -59,8 +59,8 @@ export class NewsApiAdapter {
       q?: string;
     } = {
       apiKey: this.apiKey,
-      language: "pt",
-      country: "br", // Adicionando país para garantir resultados
+      language: "en",
+      country: "us", // Adicionando país para garantir resultados
       pageSize: filtred?.quantity || 20,
       page: filtred?.page || 1,
     };
